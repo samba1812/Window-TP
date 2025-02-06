@@ -1,0 +1,77 @@
+# Import du module Active Directory
+Import-Module ActiveDirectory
+
+# Création des utilisateurs pour Samba Coulibaly
+$prenom1 = "Samba"
+$nom1 = "Coulibaly"
+$sAMAccountName1 = ($prenom1.Substring(0,1) + $nom1).ToLower()
+
+# Création du premier utilisateur standard (scoulibaly)
+New-ADUser -Name "$prenom1 $nom1" `
+    -GivenName $prenom1 `
+    -Surname $nom1 `
+    -SamAccountName $sAMAccountName1 `
+    -UserPrincipalName "$sAMAccountName1@Domaine.lan" `
+    -AccountPassword (ConvertTo-SecureString "P@ssw0rd123!" -AsPlainText -Force) `
+    -Enabled $true
+
+# Création du compte administrateur pour Samba
+$sAMAccountName1_adm = "scoulibaly_adm"
+New-ADUser -Name "Samba Coulibaly_adm" `
+    -GivenName $prenom1 `
+    -Surname $nom1 `
+    -SamAccountName $sAMAccountName1_adm `
+    -UserPrincipalName "$sAMAccountName1_adm@Domaine.lan" `
+    -AccountPassword (ConvertTo-SecureString "P@ssw0rd123!" -AsPlainText -Force) `
+    -Enabled $true
+
+# Création des utilisateurs pour Anass Barriz
+$prenom2 = "Anass"
+$nom2 = "Barriz"
+$sAMAccountName2 = ($prenom2.Substring(0,1) + $nom2).ToLower()
+
+# Création du deuxième utilisateur standard (abarriz)
+New-ADUser -Name "$prenom2 $nom2" `
+    -GivenName $prenom2 `
+    -Surname $nom2 `
+    -SamAccountName $sAMAccountName2 `
+    -UserPrincipalName "$sAMAccountName2@Domaine.lan" `
+    -AccountPassword (ConvertTo-SecureString "P@ssw0rd123!" -AsPlainText -Force) `
+    -Enabled $true
+
+# Création du compte administrateur pour Anass
+$sAMAccountName2_adm = "abarriz_adm"
+New-ADUser -Name "Anass Barriz_adm" `
+    -GivenName $prenom2 `
+    -Surname $nom2 `
+    -SamAccountName $sAMAccountName2_adm `
+    -UserPrincipalName "$sAMAccountName2_adm@Domaine.lan" `
+    -AccountPassword (ConvertTo-SecureString "P@ssw0rd123!" -AsPlainText -Force) `
+    -Enabled $true
+
+# Création des utilisateurs spécifiques
+$specialUsers = @("hr01", "tech01", "ad_pwd_reset")
+
+foreach ($user in $specialUsers) {
+    New-ADUser -Name $user `
+        -SamAccountName $user `
+        -UserPrincipalName "$user@Domaine.lan" `
+        -AccountPassword (ConvertTo-SecureString "P@ssw0rd123!" -AsPlainText -Force) `
+        -Enabled $true
+}
+
+# Création des unités d'organisation
+New-ADOrganizationalUnit -Name "EXAM" -Path "DC=Domaine,DC=lan" -ProtectedFromAccidentalDeletion $false
+New-ADOrganizationalUnit -Name "IT" -Path "OU=EXAM,DC=Domaine,DC=lan" -ProtectedFromAccidentalDeletion $false
+New-ADOrganizationalUnit -Name "HR" -Path "OU=EXAM,DC=Domaine,DC=lan" -ProtectedFromAccidentalDeletion $false
+
+# Déplacement des utilisateurs dans leurs UOs respectives
+# Déplacement des utilisateurs IT
+Get-ADUser $sAMAccountName1_adm | Move-ADObject -TargetPath "OU=IT,OU=EXAM,DC=Domaine,DC=lan"
+Get-ADUser $sAMAccountName2_adm | Move-ADObject -TargetPath "OU=IT,OU=EXAM,DC=Domaine,DC=lan"
+Get-ADUser "tech01" | Move-ADObject -TargetPath "OU=IT,OU=EXAM,DC=Domaine,DC=lan"
+
+# Déplacement de l'utilisateur HR
+Get-ADUser "hr01" | Move-ADObject -TargetPath "OU=HR,OU=EXAM,DC=Domaine,DC=lan"
+
+Write-Host "Création des UOs et déplacement des utilisateurs terminés avec succès!" -ForegroundColor Green
