@@ -1,40 +1,46 @@
-# Import du module Active Directory
-Import-Module ActiveDirectory
+# Configuration des DACLs sur le domaine
+function Configure-DomainDACLs {
+    try {
+        # Import du module Active Directory
+        Import-Module ActiveDirectory -ErrorAction Stop
 
-# Définition des variables
-$userPwdReset = "ad_pwd_reset"
-$groupDomainUsers = "Utilisateurs du domaine"  # Le nom correct en français
-$groupITAdmins = "IT Admins"
-$groupITTechs = "IT Techs"
-$groupHRUsers = "HR Users"
+        # Obtenir le domaine actuel
+        $domain = Get-ADDomain
+        $domainDN = $domain.DistinguishedName
 
-# Ajout du droit ForceChangePassword pour ad_pwd_reset sur Utilisateurs du domaine
-$acl = Get-Acl "AD:$(Get-ADGroup -Identity $groupDomainUsers)"
-$sid = (Get-ADUser -Identity $userPwdReset).SID
-$identity = [System.Security.Principal.IdentityReference]$sid
-$adRights = [System.DirectoryServices.ActiveDirectoryRights]"ExtendedRight"
-$type = [System.Security.AccessControl.AccessControlType]"Allow"
-$extendedRightGuid = "00299570-246d-11d0-a768-00aa006e0529"
+        # 1. Ajouter le droit ForceChangePassword à ad_pwd_reset sur Utilisateurs du domaine
+        $acl = Get-Acl "AD:CN=Utilisateurs du domaine,CN=Users,$domainDN"
+        $sid = (Get-ADUser -Identity "ad_pwd_reset").SID
+        $identity = [System.Security.Principal.IdentityReference]$sid
+        $adRights = [System.DirectoryServices.ActiveDirectoryRights]"ExtendedRight"
+        $type = [System.Security.AccessControl.AccessControlType]"Allow"
+        $extendedRightGuid = [Guid]"00299570-246d-11d0-a768-00aa006e0529"
 
-$aceForceChangePwd = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-    ($identity, $adRights, $type, [Guid]$extendedRightGuid)
-$acl.AddAccessRule($aceForceChangePwd)
-Set-Acl -AclObject $acl -Path "AD:$(Get-ADGroup $groupDomainUsers)"
+        $ace = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
+            ($identity, $adRights, $type, $extendedRightGuid)
+        
+        $acl.AddAccessRule($ace)
+        Set-Acl -AclObject $acl -Path "AD:CN=Utilisateurs du domaine,CN=Users,$domainDN"
 
-# Ajout du droit GenericAll pour IT Admins sur IT Techs
-$aclITTechs = Get-Acl "AD:$(Get-ADGroup $groupITTechs)"
-$sidITAdmins = (Get-ADGroup $groupITAdmins).SID
-$identityITAdmins = [System.Security.Principal.IdentityReference]$sidITAdmins
-$aceGenericAll = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-    ($identityITAdmins, [System.DirectoryServices.ActiveDirectoryRights]"GenericAll", "Allow")
-$aclITTechs.AddAccessRule($aceGenericAll)
-Set-Acl -AclObject $aclITTechs -Path "AD:$(Get-ADGroup $groupITTechs)"
+        # 2. Ajouter GenericAll au groupe IT Admins sur IT Techs et HR Users
+        foreach ($group in @("IT Techs", "HR Users")) {
+            $ouPath = if ($group -eq "IT Techs") { "OU=IT" } else { "OU=HR" }
+            $acl = Get-Acl "AD:CN=$group,$ouPath,OU=EXAM,$domainDN"
+            $sid = (Get-ADGroup -Identity "IT Admins").SID
+            $identity = [System.Security.Principal.IdentityReference]$sid
+            $adRights = [System.DirectoryServices.ActiveDirectoryRights]"GenericAll"
+            $type = [System.Security.AccessControl.AccessControlType]"Allow"
 
-# Ajout du droit GenericAll pour IT Admins sur HR Users
-$aclHRUsers = Get-Acl "AD:$(Get-ADGroup $groupHRUsers)"
-$aceGenericAll = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-    ($identityITAdmins, [System.DirectoryServices.ActiveDirectoryRights]"GenericAll", "Allow")
-$aclHRUsers.AddAccessRule($aceGenericAll)
-Set-Acl -AclObject $aclHRUsers -Path "AD:$(Get-ADGroup $groupHRUsers)"
+            $ace = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
+                ($identity, $adRights, $type)
+            
+            $acl.AddAccessRule($ace)
+            Set-Acl -AclObject $acl -Path "AD:CN=$group,$ouPath,OU=EXAM,$domainDN"
+        }
 
-Write-Host "Les permissions ont été configurées avec succès." -ForegroundColor Green
+        Write-Host "Configuration des DACLs terminée avec succès" -ForegroundColor Green
+    }
+    catch {
+        Write-Error "Erreur lors de la configuration des DACLs: $_"
+    }
+}
