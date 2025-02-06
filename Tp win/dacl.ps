@@ -3,21 +3,21 @@ Import-Module ActiveDirectory
 
 # Définition des variables
 $userPwdReset = "ad_pwd_reset"
-$groupDomainUsers = "Utilisateurs du domaine"  # Modification pour la version française
+$groupDomainUsers = "Utilisateurs du domaine"  # Le nom correct en français
 $groupITAdmins = "IT Admins"
 $groupITTechs = "IT Techs"
 $groupHRUsers = "HR Users"
 
-# Ajout du droit ForceChangePassword pour ad_pwd_reset sur Domain Users
-$acl = Get-Acl "AD:$(Get-ADGroup $groupDomainUsers)"
-$sid = (Get-ADUser $userPwdReset).SID
+# Ajout du droit ForceChangePassword pour ad_pwd_reset sur Utilisateurs du domaine
+$acl = Get-Acl "AD:$(Get-ADGroup -Identity $groupDomainUsers)"
+$sid = (Get-ADUser -Identity $userPwdReset).SID
 $identity = [System.Security.Principal.IdentityReference]$sid
 $adRights = [System.DirectoryServices.ActiveDirectoryRights]"ExtendedRight"
 $type = [System.Security.AccessControl.AccessControlType]"Allow"
-$extendedRightGuid = "00299570-246d-11d0-a768-00aa006e0529" # GUID pour ForceChangePassword
+$extendedRightGuid = "00299570-246d-11d0-a768-00aa006e0529"
 
 $aceForceChangePwd = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-    ($identity, $adRights, $type, $extendedRightGuid)
+    ($identity, $adRights, $type, [Guid]$extendedRightGuid)
 $acl.AddAccessRule($aceForceChangePwd)
 Set-Acl -AclObject $acl -Path "AD:$(Get-ADGroup $groupDomainUsers)"
 
