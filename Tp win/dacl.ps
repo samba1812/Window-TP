@@ -1,2 +1,26 @@
+$groupAdmin = "IT Admins"
+$groupsTarget = @("IT Techs", "HR Users")
+
+# Récupération du SID du groupe IT Admins
+$groupAdminSID = (Get-ADGroup -Identity $groupAdmin).SID
+
+foreach ($targetGroup in $groupsTarget) {
+    # Récupération du DACL actuel du groupe cible
+    $groupACL = Get-Acl -Path "AD:\CN=$targetGroup,CN=Users,DC=Domaine,DC=lan"
+
+    # Création de la règle GenericAll
+    $rule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule(
+        $groupAdminSID,
+        "GenericAll",
+        "Allow"
+    )
+
+    # Ajout de la règle et application
+    $groupACL.AddAccessRule($rule)
+    Set-Acl -Path "AD:\CN=$targetGroup,CN=Users,DC=Domaine,DC=lan" -AclObject $groupACL
+
+    Write-Host "Droit GenericAll ajouté à $groupAdmin sur $targetGroup" -ForegroundColor Green
+}
+
 Get-ACL -Path "AD:\CN=Utilisateurs du domaine,CN=Users,DC=Domaine,DC=lan" | Format-List
 #test
