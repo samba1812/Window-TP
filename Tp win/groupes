@@ -1,0 +1,15 @@
+# Création des groupes de sécurité
+New-ADGroup -Name "IT Admins" -GroupScope Global -GroupCategory Security
+New-ADGroup -Name "IT Techs" -GroupScope Global -GroupCategory Security
+New-ADGroup -Name "HR Users" -GroupScope Global -GroupCategory Security
+
+# Ajout des utilisateurs _adm dans le groupe IT Admins
+Get-ADUser -Filter {SamAccountName -like "*_adm"} | ForEach-Object {
+    Add-ADGroupMember -Identity "IT Admins" -Members $_.SamAccountName
+}
+
+# Ajout de tech01 dans IT Techs
+Add-ADGroupMember -Identity "IT Techs" -Members "tech01"
+
+# Ajout de hr01 dans HR Users
+Add-ADGroupMember -Identity "HR Users" -Members "hr01"
