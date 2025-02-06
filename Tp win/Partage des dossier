@@ -1,0 +1,10 @@
+# Partage IT
+New-SmbShare -Name "IT" -Path "$sharePath\IT" -FullAccess "IT Admins"
+
+# Partage HR
+New-SmbShare -Name "HR" -Path "$sharePath\HR" -FullAccess "IT Admins" -ChangeAccess "HR Users"
+
+# Partage Commun
+New-SmbShare -Name "Commun" -Path "$sharePath\Commun" -FullAccess "IT Admins" -ReadAccess "Domain Users"
+
+Write-Host "Partages créés avec succès !" -ForegroundColor Green

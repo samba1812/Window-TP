@@ -1,0 +1,34 @@
+# Définition des permissions
+$aclIT = Get-Acl "$sharePath\IT"
+$aclHR = Get-Acl "$sharePath\HR"
+$aclCommun = Get-Acl "$sharePath\Commun"
+
+# Suppression des permissions héritées et réinitialisation
+$aclIT.SetAccessRuleProtection($true, $false)
+$aclHR.SetAccessRuleProtection($true, $false)
+$aclCommun.SetAccessRuleProtection($true, $false)
+
+# Ajout des nouvelles règles
+$ruleIT_Admins = New-Object System.Security.AccessControl.FileSystemAccessRule("IT Admins", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+$ruleDomainUsers_Deny = New-Object System.Security.AccessControl.FileSystemAccessRule("Domain Users", "FullControl", "ContainerInherit,ObjectInherit", "None", "Deny")
+
+$ruleHR_Admins = New-Object System.Security.AccessControl.FileSystemAccessRule("IT Admins", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+$ruleHR_Users = New-Object System.Security.AccessControl.FileSystemAccessRule("HR Users", "Modify", "ContainerInherit,ObjectInherit", "None", "Allow")
+
+$ruleCommun_Admins = New-Object System.Security.AccessControl.FileSystemAccessRule("IT Admins", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+$ruleCommun_DomainUsers = New-Object System.Security.AccessControl.FileSystemAccessRule("Domain Users", "Read", "ContainerInherit,ObjectInherit", "None", "Allow")
+
+# Application des règles
+$aclIT.SetAccessRule($ruleIT_Admins)
+$aclIT.SetAccessRule($ruleDomainUsers_Deny)
+Set-Acl "$sharePath\IT" $aclIT
+
+$aclHR.SetAccessRule($ruleHR_Admins)
+$aclHR.SetAccessRule($ruleHR_Users)
+Set-Acl "$sharePath\HR" $aclHR
+
+$aclCommun.SetAccessRule($ruleCommun_Admins)
+$aclCommun.SetAccessRule($ruleCommun_DomainUsers)
+Set-Acl "$sharePath\Commun" $aclCommun
+
+Write-Host "Permissions NTFS appliquées avec succès !" -ForegroundColor Green

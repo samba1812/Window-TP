@@ -1,0 +1,12 @@
+# Définition des chemins
+$sharePath = "C:\Partages"
+$folders = @("IT", "HR", "Commun\Wallpapers")
+
+# Création des dossiers
+foreach ($folder in $folders) {
+    $fullPath = "$sharePath\$folder"
+    if (!(Test-Path $fullPath)) {
+        New-Item -ItemType Directory -Path $fullPath
+        Write-Host "Dossier créé : $fullPath"
+    }
+}
